@@ -113,6 +113,7 @@ class Bot:
 
         self.dispatcher.add_handler(CommandHandler("start", self.start))
         self.dispatcher.add_handler(CommandHandler("stop", self.stop))
+        self.dispatcher.add_handler(CommandHandler("subscriptions", self.subscriptions))
         self.dispatcher.add_handler(CallbackQueryHandler(self.callback))
 
     def run(self) -> None:
@@ -257,6 +258,19 @@ class Bot:
             ]
         )
         update.message.reply_text(message, reply_markup=reply_markup)
+
+    def subscriptions(self, update: Update, context: CallbackContext) -> None:
+        """List subscriptions."""
+        user_subscriptions = subscriptions(update.effective_chat.id)
+        message = (
+            "\n".join(
+                ("✅ " if plugin_name in user_subscriptions else "❌ ")
+                + self.plugin_long_name(plugin, plugin_name)
+                for plugin_name, plugin in self.plugins.items()
+            )
+            + "\n\nSubscribe with /start and unsubscribe with /stop"
+        )
+        update.message.reply_text(message)
 
     def callback(self, update: Update, context: CallbackContext) -> None:
         """Handle callback for subscribe or unsubscribe action."""
