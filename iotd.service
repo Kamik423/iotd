@@ -6,8 +6,6 @@ After=multi-user.target
 ExecStart=/usr/bin/python3 /home/pi/iotd/iotd.py
 WorkingDirectory=/home/pi/iotd
 User=pi
-StandardOutput=file:/home/pi/iotd.log
-StandardError=file:/home/pi/iotd.log
 
 [Install]
 WantedBy=multi-user.target
