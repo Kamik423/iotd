@@ -9,3 +9,4 @@ __pycache__/
 
 secrets.toml
 plugins/red_panda_cache.txt
+subscriptions.toml
