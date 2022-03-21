@@ -1,0 +1,6 @@
+toml
+python-telegram-bot
+pluginbase
+pyyaml
+praw
+requests

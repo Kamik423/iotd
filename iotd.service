@@ -1,0 +1,12 @@
+[Unit]
+Description=Image of the Day --- Telegram Bot
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/iotd/iotd.py
+WorkingDirectory=/home/pi/iotd
+User=pi
+
+[Install]
+WantedBy=multi-user.target
