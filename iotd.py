@@ -53,18 +53,22 @@ def subscriptions(user: int) -> list[str]:
     config = toml.loads(SUBSCRIPTIONS_CONFIG.read_text())
     if not user in config:
         return []
-    return config[user]
+    return config[user].get("subscriptions", [])
 
 
-def subscribe(user: int, plugin_name: str) -> None:
+def subscribe(user: int, plugin_name: str, name: str | None = None) -> None:
     """Subscrie a user to a plugin."""
     user = str(user)
     data: dict[int, [list[str]]] = {}
     if SUBSCRIPTIONS_CONFIG.exists():
         data = toml.loads(SUBSCRIPTIONS_CONFIG.read_text())
     if not user in data:
-        data[user] = []
-    data[user] = list(set(data[user] + [plugin_name]))
+        data[user] = {}
+    data[user]["subscriptions"] = list(
+        set(data[user].get("subscriptions", []) + [plugin_name])
+    )
+    if name is not None:
+        data[user]["name"] = name
     SUBSCRIPTIONS_CONFIG.write_text(toml.dumps(data))
 
 
@@ -76,8 +80,9 @@ def unsubscribe(user: int, plugin_name: str) -> None:
         data = toml.loads(SUBSCRIPTIONS_CONFIG.read_text())
     if not user in data:
         data[user] = []
-    data[user].remove(plugin_name)
-    if not data[user]:
+    if plugin_name in data[user].get("subscriptions", []):
+        data[user]["subscriptions"].remove(plugin_name)
+    if not data[user].get("subscriptions", []):
         del data[user]
     SUBSCRIPTIONS_CONFIG.write_text(toml.dumps(data))
 
@@ -89,8 +94,8 @@ def subscriber(plugin_name: str | None = None) -> list[int]:
     users = toml.loads(SUBSCRIPTIONS_CONFIG.read_text())
     return [
         int(user)
-        for user, subscriptions in users.items()
-        if plugin_name is None or plugin_name in subscriptions
+        for user, userdata in users.items()
+        if plugin_name is None or plugin_name in userdata.get("subscriptions", [])
     ]
 
 
@@ -160,12 +165,13 @@ class Bot:
     def run_plugin_named(self, plugin_name: str) -> None:
         """Run a plugin."""
         if plugin_name in self.plugins:
+            subscribers = subscriber(plugin_name)
+            logging.info(f"Running: {plugin_name} for {len(subscribers)} subscriber[s]")
             self.plugins[plugin_name].run(
                 self.updater.bot,
-                subscriber(plugin_name),
+                subscribers,
                 toml.loads(SECRETS_FILE.read_text()),
             )
-            logging.info(f"Running: {plugin_name}")
         else:
             logging.error(f"Running (not found): {plugin_name}")
 
@@ -278,7 +284,11 @@ class Bot:
         chat = update.callback_query.message.chat
         action, plugin = reply.split(" ")
         if action == "subscribe":
-            subscribe(update.effective_chat.id, plugin)
+            subscribe(
+                update.effective_chat.id,
+                plugin,
+                name=f"{chat.first_name} {chat.last_name}",
+            )
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="Successfully subscribed to "
