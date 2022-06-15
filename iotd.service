@@ -6,6 +6,8 @@ After=multi-user.target
 ExecStart=/usr/bin/python3 /home/pi/iotd/iotd.py
 WorkingDirectory=/home/pi/iotd
 User=pi
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
