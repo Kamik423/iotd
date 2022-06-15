@@ -5,7 +5,9 @@ import logging
 import types
 from pathlib import Path
 
+import huepy
 import pytz
+import tabulate
 import toml
 from pluginbase import PluginBase, PluginSource
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, ParseMode,
@@ -205,6 +207,54 @@ class Bot:
             except Exception as e:
                 logging.error(f"'{e}' for {chat_id}")
 
+    def subscriber(self) -> None:
+        if not SUBSCRIPTIONS_CONFIG.exists():
+            print(huepy.info("Subscription config does not exist!"))
+        config = toml.loads(SUBSCRIPTIONS_CONFIG.read_text())
+        plugins = list(self.plugins.keys())
+        table = [
+            [
+                data.get("name", "NONAME"),
+                *[
+                    "×" if plugin in data.get("subscriptions", []) else ""
+                    for plugin in plugins
+                ],
+            ]
+            for data in config.values()
+        ]
+        print(
+            tabulate.tabulate(
+                table,
+                headers=[huepy.red("User"), *[huepy.red(plugin) for plugin in plugins]],
+                colalign=("left", *(["center"] * len(plugins))),
+                tablefmt="rst",
+            )
+        )
+        user_count = len(
+            [user for user, data in config.items() if data.get("subscriptions", [])]
+        )
+        print(f"\nFor a total of {huepy.red(user_count)} People.")
+        print(
+            tabulate.tabulate(
+                [
+                    [
+                        f"{plugin}:",
+                        huepy.red(
+                            len(
+                                [
+                                    user
+                                    for user, data in config.items()
+                                    if plugin in data.get("subscriptions", [])
+                                ]
+                            )
+                        ),
+                    ]
+                    for plugin in plugins
+                ],
+                tablefmt="plain",
+            )
+        )
+
     ################
     # Bot Commands #
     ################
@@ -339,6 +389,9 @@ def main() -> None:
         help="Run a specific plugin now (for testing).",
         choices=bot.plugins.keys(),
     )
+    group.add_argument(
+        "--subscriber", help="List subscriber and metrics.", action="store_true"
+    )
     arguments = parser.parse_args()
 
     # Execute desired action
@@ -347,6 +400,9 @@ def main() -> None:
         return
     if (plugin_name := arguments.run) is not None:
         bot.run_plugin_named(plugin_name)
+        return
+    if arguments.subscriber:
+        bot.subscriber()
         return
     bot.run()
 

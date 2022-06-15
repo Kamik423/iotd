@@ -1,6 +1,8 @@
-toml
-python-telegram-bot
+huepy
 pluginbase
-pyyaml
 praw
+python-telegram-bot
+pyyaml
 requests
+tabulate
+toml
